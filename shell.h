@@ -243,7 +243,6 @@ int _strncmp(char *s1, char *s2, int n);
 char  *_strcat(char *dest, char *src);
 int print_env(void);
 void *get_line(void);
-void *_realloc(void *ptr, size_t first_size, size_t new_size);
 void free_memory_pp(void **ptr);
 void free_memory_p(void *ptr);
 

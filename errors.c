@@ -3,14 +3,14 @@
 /**
  * _eputs - this prints an input string
  * @str: the string to be printed
- * Return: Null
+ * Return: 1
  */
-void _eputs(char *str)
+int _eputs(char *str)
 {
 	int i = 0;
 
 	if (!str)
-		return (0);
+		return (1);
 	while (str[i] != '\0')
 	{
 		_eputchar(str[i]);
