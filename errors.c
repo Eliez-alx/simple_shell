@@ -16,9 +16,10 @@ int _eputs(char *str)
 		_eputchar(str[i]);
 		i++;
 	}
+	return (0);
 }
 
-/**
+/*
  * _eputchar - this writes the character c to stderr
  * @c: The character to be printed
  * Return: 1 on success
