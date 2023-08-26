@@ -1,111 +1,121 @@
 #include "shell.h"
 
 /**
- * _myhistory - this displays the history list, one command by line
- * preceded with line numbers starting at 0.
- * @info: the Structure containing potential arguments used to
- * maintain constant function prototype.
- *  Return: Always 0
+ * change_dir - Changes directory
+ * @cmd: Parsed command
+ * @st: Status of last command executed
+ * Return: 0 on success 1 if failed (For OLDPWD Always 0 incase of no OLDPWD)
  */
-int _myhistory(info_t *info)
+int change_dir(char **cmd, __attribute__((unused))int st)
 {
-	print_list(info->history);
+	int value = -1;
+	char cwd[PATH_MAX];
+
+	if (cmd[1] == NULL)
+		value = chdir(getenv("HOME"));
+	else if (_strcmp(cmd[1], "-") == 0)
+	{
+		value = chdir(getenv("OLDPWD"));
+	}
+	else
+		value = chdir(cmd[1]);
+
+	if (value == -1)
+	{
+		perror("hsh");
+		return (-1);
+	}
+	else if (value != -1)
+	{
+		getcwd(cwd, sizeof(cwd));
+		setenv("OLDPWD", getenv("PWD"), 1);
+		setenv("PWD", cwd, 1);
+	}
 	return (0);
 }
-
 /**
- * unset_alias - this sets alias to string
- * @info: the parameter struct
- * @str: the string alias
- * Return: Always 0 on success, 1 on error
+ * dis_env - Display enviroment variable
+ * @cmd: parsed command
+ * @st: status of last command executed
+ * Return: Always 0
  */
-int unset_alias(info_t *info, char *str)
+int dis_env(__attribute__((unused)) char **cmd, __attribute__((unused)) int st)
 {
-	char *p, c;
-	int ret;
+	size_t i;
+	int len;
 
-	p = _strchr(str, '=');
-	if (!p)
-		return (1);
-	c = *p;
-	*p = 0;
-	ret = delete_node_at_index(&(info->alias),
-			get_node_index(info->alias, node_starts_with(info->alias, str, -1)));
-	*p = c;
-	return (ret);
-}
-
-/**
-* set_alias - this sets alias to string
- * @info: the parameter struct
- * @str: the string alias
- * Return: Always 0 on success, 1 on error
- */
-int set_alias(info_t *info, char *str)
-{
-	char *p;
-
-	p = _strchr(str, '=');
-	if (!p)
-		return (1);
-	if (!*++p)
-		return (unset_alias(info, str));
-
-	unset_alias(info, str);
-	return (add_node_end(&(info->alias), str, 0) == NULL);
-}
-
-/**
- * print_alias - this prints an alias string
- * @node: the alias node
- * Return: Always 0 on success, 1 on error
- */
-int print_alias(list_t *node)
-{
-	char *p = NULL, *a = NULL;
-
-	if (node)
+	for (i = 0; environ[i] != NULL; i++)
 	{
-		p = _strchr(node->str, '=');
-		for (a = node->str; a <= p; a++)
-			_putchar(*a);
-		_putchar('\'');
-		_puts(p + 1);
-		_puts("'\n");
-		return (0);
+		len = _strlen(environ[i]);
+		write(1, environ[i], len);
+		write(STDOUT_FILENO, "\n", 1);
 	}
+	return (0);
+}
+/**
+ * echo_bul - execute echo cases
+ * @st: statue of last command executed
+ * @cmd: parsed command
+ * Return: Always 1 Or execute normal echo
+ */
+int echo_bul(char **cmd, int st)
+{
+	char *path;
+	unsigned int pid = getppid();
+
+	if (_strncmp(cmd[1], "$?", 2) == 0)
+	{
+		print_number_int(st);
+		PRINT("\n");
+	}
+	else if (_strncmp(cmd[1], "$$", 2) == 0)
+	{
+		print_number(pid);
+		PRINT("\n");
+	}
+	else if (_strncmp(cmd[1], "$PATH", 5) == 0)
+	{
+		path = _getenv("PATH");
+		PRINT(path);
+		PRINT("\n");
+		free(path);
+	}
+	else
+		return (print_echo(cmd));
+
 	return (1);
 }
-
 /**
- * _myalias - this mimics the alias builtin (man alias)
- * @info: the Structure containing potential arguments which is used to
- * maintain constant function prototype.
- *  Return: Always 0
+ * history_dis - display history of user input on simple_shell
+ * @c: parsed command
+ * @st: status of last command executed
+ * Return: 0 success or -1 if fail
  */
-int _myalias(info_t *info)
+int history_dis(__attribute__((unused))char **c, __attribute__((unused))int st)
 {
-	int i = 0;
-	char *p = NULL;
-	list_t *node = NULL;
+	char *filename = ".simple_shell_history";
+	FILE *fp;
+	char *line = NULL;
+	size_t len = 0;
+	int counter = 0;
+	char *er;
 
-	if (info->argc == 1)
+	fp = fopen(filename, "r");
+	if (fp == NULL)
 	{
-		node = info->alias;
-		while (node)
-		{
-			print_alias(node);
-			node = node->next;
-		}
-		return (0);
+		return (-1);
 	}
-	for (i = 1; info->argv[i]; i++)
+	while ((getline(&line, &len, fp)) != -1)
 	{
-		p = _strchr(info->argv[i], '=');
-		if (p)
-			set_alias(info, info->argv[i]);
-		else
-			print_alias(node_starts_with(info->alias, info->argv[i], '='));
+		counter++;
+		er = _itoa(counter);
+		PRINT(er);
+		free(er);
+		PRINT(" ");
+		PRINT(line);
 	}
+	if (line)
+		free(line);
+	fclose(fp);
 	return (0);
 }
